@@ -9,7 +9,7 @@ player_queue = Queue()
 
 
 def listen(ip, port):
-    print 'listening:%s:%s' % (str(ip), str(port))
+    print 'SERVER_LISTENING:%s:%s' % (str(ip), str(port))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((ip, port))
     while True:
@@ -53,7 +53,7 @@ def listen(ip, port):
                 print 'player %s retired due to timeout' % player[0]
 
 def heart_beat(ip, port):
-    print 'here'
+    print 'HEARTBEAT'
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     msg = {'SERVER': ip, 'ACTION':'HEARTBEAT'}
     while True:
@@ -68,7 +68,8 @@ def heart_beat(ip, port):
 
 
 def main():
-    ip = '127.0.0.1'
+    ip = '131.252.200.180'
+    #ip = '127.0.0.1'
     #ip = '172.31.24.8'
     #ip = '192.168.1.135'
     port = 56565

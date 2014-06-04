@@ -9,7 +9,7 @@ import string
 
 q = Queue()
 #server_address = '54.86.251.5'
-server_address = '127.0.0.1'
+server_address = '131.252.200.180'
 #server_address = '192.168.1.135'
 server_port = 56565
 
@@ -86,7 +86,7 @@ class Pong():
 
     def udp_send(self, ip, port, msg):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #print 'SENDING %s %s %s' % (ip, port, msg)
+        print 'SENDING %s %s %s' % (ip, port, msg)
         sock.sendto(msg, (ip, port))
 
     def chat(self, command):
