@@ -63,8 +63,9 @@ def heart_beat(ip, port):
 
 
 def main():
-    ip = '127.0.0.1'
+    #ip = '127.0.0.1'
     #ip = '172.31.24.8'
+    ip = '192.168.1.135'
     port = 56565
     threading.Thread(target=listen, args=(ip, port)).start()
     threading.Thread(target=heart_beat, args=(ip, port)).start()
