@@ -1,6 +1,7 @@
 import socket
 import json
 import threading
+from time import time
 from time import sleep
 from Queue import Queue
 
@@ -13,37 +14,45 @@ def listen(ip, port):
     sock.bind((ip, port))
     while True:
         data, addr = sock.recvfrom(1024)
-        print addr
-        print data
-
         msg_recv = json.loads(data)
+        print msg_recv
+        players = []
 
-        if msg_recv['ACTION'] == 'ADD':
-            print msg_recv
-            entry = [msg_recv['PLAYER'], addr]
-            player_queue.put(entry)
-
-
-        if msg_recv['ACTION'] == 'LIST':
-            players = []
-            while not player_queue.empty():
+        #get players from queue
+        while not player_queue.empty():
                 players.append(player_queue.get())
 
-            msg = {'SERVER':ip, 'ACTION':'LIST', 'OPPONENTS':players}
+        if msg_recv['ACTION'] == 'ADD':
+            entry = [msg_recv['PLAYER'], addr, time()]
+            player_queue.put(entry)
 
+        if msg_recv['ACTION'] == 'BEAT':
+            #update players time
             for player in players:
-                player_queue.put(player)
+                if player[0] == msg_recv['PLAYER']:
+                    player[2] = time()
+
+        if msg_recv['ACTION'] == 'LIST':
+            msg = {'SERVER':ip, 'ACTION':'LIST', 'OPPONENTS':players}
+            for player in players:
                 if player[0] == msg_recv['PLAYER']:
                     print 'sending %s to %s' % (msg, str(player[1]))
                     sock.sendto(json.dumps(msg), player[1])
 
+        #put players back on queue
+        curr_time = time()
+        for player in players:
+            if curr_time - player[2] < 5:
+                player_queue.put(player)
+            else:
+                print 'player %s retired due to timeout' % player[0]
 
 def heart_beat(ip, port):
     print 'here'
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     msg = {'SERVER': ip, 'ACTION':'HEARTBEAT'}
     while True:
-        sleep(2)
+        sleep(1)
         players = []
         while not player_queue.empty():
             players.append(player_queue.get())
