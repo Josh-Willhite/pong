@@ -9,14 +9,13 @@ import string
 
 q = Queue()
 #server_address = '54.86.251.5'
-#server_address = '127.0.0.1'
-server_address = '192.168.1.135'
+server_address = '127.0.0.1'
+#server_address = '192.168.1.135'
 server_port = 56565
 
 #TODO add reset command
 #TODO figure out why updates continue after game stops
 #TODO display player name once it's set
-#TODO get rid of old player reinstitute hear beat ...
 
 class Pong():
     def __init__(self, side):
@@ -27,8 +26,8 @@ class Pong():
         self.left_score = 0
         self.right_score = 0
         self.msg_number = 0
-        self.opponent_ip = '127.0.0.1'
-        self.opponent_port = 55555
+        self.opponent_ip = '127.0.0.1' #this gets changed later
+        self.opponent_port = 55555     #so does this
         self.height = 200
         self.width = 400
         self.speed = 20
