@@ -39,6 +39,7 @@ class Pong():
         self.ball_angle = None
 
         self.root = Tk()
+        self.root.wm_title("NetPong")
         self.command_line_in = Entry(self.root, width=60)
         self.command_line_out = Entry(self.root, width=60)
         self.window = Canvas(self.root, width=self.width, height=self.height, borderwidth=2, relief='sunken')
