@@ -293,6 +293,8 @@ class Pong():
         if self.game_started:
             if self.side == 'left':
                 self.next_ball_position()
+            else:
+                self.check_score()
 
             self.window.coords(self.ball, self.ball_pos[0] - self.ball_radius, self.ball_pos[1] + self.ball_radius,
                                             self.ball_pos[0] + self.ball_radius, self.ball_pos[1] - self.ball_radius)
