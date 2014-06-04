@@ -13,18 +13,15 @@ server_address = '127.0.0.1'
 #server_address = '192.168.1.135'
 server_port = 56565
 
-#TODO add reset command
-#TODO figure out why updates continue after game stops
-#TODO display player name once it's set
-
 class Pong():
     def __init__(self, side):
         self.side = side
-        self.player_name = 'default'
+        self.player_name = ''
         self.game_started = False
         self.opponent_list = ''
         self.left_score = 0
         self.right_score = 0
+        self.score = 0
         self.msg_number = 0
         self.opponent_ip = '127.0.0.1' #this gets changed later
         self.opponent_port = 55555     #so does this
@@ -47,7 +44,7 @@ class Pong():
         self.window = Canvas(self.root, width=self.width, height=self.height, borderwidth=2, relief='sunken')
         self.window.pack()
         self.txt_location = self.window.create_text(self.width/2,10, anchor='n')
-        self.window.itemconfig(self.txt_location, text='NAME: ' + self.player_name)
+        self.window.itemconfig(self.txt_location, text='%s        %s        %s' % (self.left_score, self.player_name, self.right_score))
         self.command_line_in.insert(0, '>')
         self.command_line_in.pack()
         self.command_line_out.pack()
@@ -88,7 +85,7 @@ class Pong():
 
     def udp_send(self, ip, port, msg):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print 'SENDING %s %s %s' % (ip, port, msg)
+        #print 'SENDING %s %s %s' % (ip, port, msg)
         sock.sendto(msg, (ip, port))
 
     def chat(self, command):
@@ -98,16 +95,19 @@ class Pong():
         msg['MSG'] = ' '.join(command[2:])
 
         addr = None
-        for op in self.opponent_list:
-            if op[0] == command[1]:
+        if command[1] == 'ALL':
+            for op in self.opponent_list:
                 addr = op[1]
-
-        if type(addr) == type(None):
-            self.command_line_out.delete(0, END)
-            self.command_line_out.insert(0, 'unable to find oppend in list')
+                self.udp_send(addr[0], addr[1], json.dumps(msg))
         else:
-            self.udp_send(addr[0], addr[1], json.dumps(msg))
-
+            for op in self.opponent_list:
+                if op[0] == command[1]:
+                    addr = op[1]
+            if type(addr) == type(None):
+                self.command_line_out.delete(0, END)
+                self.command_line_out.insert(0, 'unable to find opponent in list')
+            else:
+                self.udp_send(addr[0], addr[1], json.dumps(msg))
 
     def check_queue(self):
         while not q.empty():
@@ -194,19 +194,22 @@ class Pong():
             self.udp_send(addr[0], addr[1], json.dumps(msg))
 
     def check_score(self):
-        self.command_line_out.delete(0, END)
+        self.window.itemconfig(self.txt_location, text='%s        %s        %s' % (self.left_score, self.player_name, self.right_score))
         if self.right_score >= 5:
-            self.command_line_out.insert(0, 'Right player wins! Final Score: %s %s' % (str(self.left_score), str(self.right_score)))
-            for i in range(10): self.send_game_state()
-            self.game_started = False
+            self.window.itemconfig(self.txt_location, text='%s        RIGHT SIDE WINS!!        %s' % (self.left_score, self.right_score))
+            for i in range(10):
+                self.game_started = False
+                self.send_game_state()
         elif self.left_score >= 5:
-            self.command_line_out.insert(0, 'Left player wins! Final Score: %s %s' % (str(self.left_score), str(self.right_score)))
-            for i in range(10): self.send_game_state()
-            self.game_started = False
+            self.window.itemconfig(self.txt_location, text='%s        LEFT SIDE WINS!!        %s' % (self.left_score, self.right_score))
+            for i in range(10):
+                self.game_started = False
+                self.send_game_state()
         else:
-            self.command_line_out.insert(0, 'Current Score: %s %s' % (str(self.left_score), str(self.right_score)))
             if self.side == 'left':
                 self.ball_pos = [self.width/2, self.height/2]
+
+
 
     def agree_to_game(self, opponent_name):
         addr = self.get_opponent_addr(opponent_name)
@@ -263,13 +266,21 @@ class Pong():
             if command[0] == '>list':
                 self.get_opponent_list()
             if command[0] == '>name':
+                self.start_game = False
+                self.player_name = ''
+                self.right_score = 0
+                self.left_score = 0
+                self.opponent_ip = ''
+                self.opponent_port = ''
+                self.msg_number = 0
+                self.side = 'left'
                 self.player_name = command[1]
-                self.window.itemconfig(self.txt_location, text='NAME: ' + self.player_name)
+                self.window.itemconfig(self.txt_location, text='%s        %s        %s' % (self.left_score, self.player_name, self.right_score))
                 self.start_listener()
                 self.get_opponent_list()
+
             self.command_line_in.delete(0, END)
             self.command_line_in.insert(0, '>')
-
         elif command[0] != '>':
             self.command_line_in.delete(0, END)
             self.command_line_in.insert(0, '>')
