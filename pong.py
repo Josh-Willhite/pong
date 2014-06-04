@@ -5,7 +5,7 @@ from math import *
 from Queue import Queue
 import socket
 import json
-from time import sleep
+import string
 
 q = Queue()
 #server_address = '54.86.251.5'
@@ -13,6 +13,10 @@ q = Queue()
 server_address = '192.168.1.135'
 server_port = 56565
 
+#TODO add reset command
+#TODO figure out why updates continue after game stops
+#TODO display player name once it's set
+#TODO get rid of old player reinstitute hear beat ...
 
 class Pong():
     def __init__(self, side):
@@ -30,9 +34,9 @@ class Pong():
         self.speed = 20
         self.paddle_height = self.height/4
         self.paddle_width = self.width/40
-        self.ball_radius = self.width/40
-        self.ball_color = 'red'
-        self.paddle_color = 'green'
+        self.ball_radius = self.width/20
+        self.ball_color = 'gray'
+        self.paddle_color = 'black'
         self.ball_pos = [self.width/2, self.height/2]
         self.left_paddle_pos = self.height/2
         self.right_paddle_pos = self.height/2
@@ -41,8 +45,10 @@ class Pong():
         self.root = Tk()
         self.command_line_in = Entry(self.root, width=60)
         self.command_line_out = Entry(self.root, width=60)
-        self.window = Canvas(self.root, width=self.width, height=self.height)
+        self.window = Canvas(self.root, width=self.width, height=self.height, borderwidth=2, relief='sunken')
         self.window.pack()
+        self.txt_location = self.window.create_text(self.width/2,10, anchor='n')
+        self.window.itemconfig(self.txt_location, text='NAME: ' + self.player_name)
         self.command_line_in.insert(0, '>')
         self.command_line_in.pack()
         self.command_line_out.pack()
@@ -55,8 +61,8 @@ class Pong():
         self.left_paddle = self.window.create_rectangle(4, self.height/2 + self.paddle_height/2, 4 + self.paddle_width,
                                                        self.height/2 - self.paddle_height/2, fill=self.paddle_color)
 
-        self.right_paddle = self.window.create_rectangle(self.width - self.paddle_width, self.height/2 + self.paddle_height/2,
-                                                       self.width, self.height/2 - self.paddle_height/2, fill=self.paddle_color)
+        self.right_paddle = self.window.create_rectangle(self.width - self.paddle_width + 4, self.height/2 + self.paddle_height/2,
+                                                       self.width + 4, self.height/2 - self.paddle_height/2, fill=self.paddle_color)
 
         self.update_game_state()
         self.send_game_state()
@@ -64,7 +70,7 @@ class Pong():
         self.root.mainloop()
 
     def send_game_state(self):
-        if self.game_started:
+        if self.game_started or self.right_score == 5 or self.left_score == 5:
             msg = {}
             msg['PLAYER'] = self.player_name
             msg['ACTION'] = 'UPDATE'
@@ -79,7 +85,7 @@ class Pong():
             msg['UNum'] = self.msg_number
             self.udp_send(self.opponent_ip, self.opponent_port, json.dumps(msg))
             self.msg_number += 1
-        self.root.after(100, self.send_game_state)
+        self.root.after(self.speed, self.send_game_state)
 
     def udp_send(self, ip, port, msg):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -113,6 +119,8 @@ class Pong():
                     if self.side == 'right':
                         self.ball_pos = [int(msg['BPos'][0]), int(msg['BPos'][1])]
                         self.left_paddle_pos = int(msg['PPos'])
+                        self.right_score = int(msg['RIGHTSCORE'])
+                        self.left_score = int(msg['LEFTSCORE'])
                     else:
                         self.right_paddle_pos = int(msg['PPos'])
                 if msg['ACTION'] == 'CHAT':
@@ -158,7 +166,8 @@ class Pong():
         self.udp_send(server_address, server_port, json.dumps(msg))
 
     def start_listener(self):
-        listen = threading.Thread(target=self.listen, args=('127.0.0.1', 55556))
+        random_port = '5' + ''.join([random.choice(string.digits) for i in range(4)])
+        listen = threading.Thread(target=self.listen, args=('127.0.0.1', random_port))
         listen.setDaemon(True)
         listen.start()
 
@@ -186,13 +195,14 @@ class Pong():
             self.udp_send(addr[0], addr[1], json.dumps(msg))
 
     def check_score(self):
-        sleep(1)
         self.command_line_out.delete(0, END)
         if self.right_score >= 5:
             self.command_line_out.insert(0, 'Right player wins! Final Score: %s %s' % (str(self.left_score), str(self.right_score)))
+            for i in range(10): self.send_game_state()
             self.game_started = False
         elif self.left_score >= 5:
             self.command_line_out.insert(0, 'Left player wins! Final Score: %s %s' % (str(self.left_score), str(self.right_score)))
+            for i in range(10): self.send_game_state()
             self.game_started = False
         else:
             self.command_line_out.insert(0, 'Current Score: %s %s' % (str(self.left_score), str(self.right_score)))
@@ -217,19 +227,25 @@ class Pong():
         msg['ACTION'] = 'GAMESTART'
         self.udp_send(self.opponent_ip, self.opponent_port, json.dumps(msg))
 
+    def list_remove(self):
+        msg = {}
+        msg['PLAYER'] = self.player_name
+        msg['ACTION'] = 'REMOVE'
+        self.udp_send(server_address, server_port, json.dumps(msg))
+
     def command_interpreter(self):
-        commands = ['>yes', '>request_game', '>msg', '>quit', '>list', '>set_name', '>start', '>start_listener']
+        commands = ['>yes', '>request_game', '>msg', '>quit', '>list', '>name', '>start', '>start_listener']
         command = self.command_line_in.get().split(' ')
         if command[0] in commands:
             if command[0] == '>yes':
                 self.agree_to_game(command[1])
-
+                self.list_remove()
             if command[0] == '>request_game':
                 self.request_game(command[1])
             if command[0] == '>msg':
                 self.chat(command)
                 self.command_line_out.delete(0, END)
-                self.command_line_out.insert(0, 'sending message ...')
+                self.command_line_out.insert(0, 'waiting for reply...')
             if command[0] == '>start_listener':
                 if self.player_name != 'default':
                     self.start_listener()
@@ -240,14 +256,16 @@ class Pong():
                     self.command_line_out.insert(0, 'Please "set_name" before registering')
             if command[0] == '>start':
                 self.game_started = True
+                self.list_remove()
                 self.command_line_out.delete(0, END)
                 self.command_line_out.insert(0,'game started!')
             if command[0] == '>quit':
                 self.root.quit()
             if command[0] == '>list':
                 self.get_opponent_list()
-            if command[0] == '>set_name':
+            if command[0] == '>name':
                 self.player_name = command[1]
+                self.window.itemconfig(self.txt_location, text='NAME: ' + self.player_name)
                 self.start_listener()
                 self.get_opponent_list()
             self.command_line_in.delete(0, END)
@@ -299,8 +317,8 @@ class Pong():
             self.window.coords(self.ball, self.ball_pos[0] - self.ball_radius, self.ball_pos[1] + self.ball_radius,
                                             self.ball_pos[0] + self.ball_radius, self.ball_pos[1] - self.ball_radius)
             if self.side == 'left':
-                self.window.coords(self.right_paddle, self.width - self.paddle_width, self.right_paddle_pos + self.paddle_height/2,
-                                                           self.width, self.right_paddle_pos - self.paddle_height/2)
+                self.window.coords(self.right_paddle, self.width - self.paddle_width + 4, self.right_paddle_pos + self.paddle_height/2,
+                                                           self.width + 4, self.right_paddle_pos - self.paddle_height/2)
             else:
                 self.window.coords(self.left_paddle, 4, self.left_paddle_pos + self.paddle_height/2, 4 + self.paddle_width,
                                                        self.left_paddle_pos - self.paddle_height/2)
@@ -324,6 +342,8 @@ class Pong():
                 if self.side == 'left':
                     self.right_score += 1
                 self.check_score()
+                self.ball_angle = random.choice([random.choice([x for x in range(0, 70)]), random.choice([x for x in range(110, 250)]),
+                                        random.choice([x for x in range(290,359)])])
         #RIGHT
         elif self.ball_pos[0] > self.width:
             if self.ball_pos[1] < (self.right_paddle_pos + self.paddle_height/2)  and self.ball_pos[1] > (self.right_paddle_pos - self.paddle_height/2):
@@ -337,6 +357,8 @@ class Pong():
                 if self.side == 'left':
                     self.left_score += 1
                 self.check_score()
+                self.ball_angle = random.choice([random.choice([x for x in range(0, 70)]), random.choice([x for x in range(110, 250)]),
+                                        random.choice([x for x in range(290,359)])])
         #TOP
         elif self.ball_pos[1] < 0:
             self.ball_angle = 360 - self.ball_angle

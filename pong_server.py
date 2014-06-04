@@ -26,6 +26,11 @@ def listen(ip, port):
             entry = [msg_recv['PLAYER'], addr, time()]
             player_queue.put(entry)
 
+        if msg_recv['ACTION'] == 'REMOVE':
+            for player in players:
+                if player[0] == msg_recv['PLAYER']:
+                    players.remove(player)
+
         if msg_recv['ACTION'] == 'BEAT':
             #update players time
             for player in players:
@@ -42,7 +47,7 @@ def listen(ip, port):
         #put players back on queue
         curr_time = time()
         for player in players:
-            if curr_time - player[2] < 5:
+            if curr_time - player[2] < 10:
                 player_queue.put(player)
             else:
                 print 'player %s retired due to timeout' % player[0]
@@ -69,6 +74,5 @@ def main():
     port = 56565
     threading.Thread(target=listen, args=(ip, port)).start()
     threading.Thread(target=heart_beat, args=(ip, port)).start()
-
 
 main()
