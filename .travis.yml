@@ -16,7 +16,9 @@ deploy:
   api_key:
     secure: YZlScQfFoM9y+9xkS2XIv8cyxU26TyVoC7XVNn91jDqEKIX6zodq7g/S+zjUtm151OSuHXbk05AInW9jFw8/4OCr7uoZopn9yvaavvbTUvsaPL2r9Tr7eNOuOQXkglxxZi3m6arXkQ0D0VAecNfatCPXg/aR6+DusUIKTbTVDUo=
   file: infrastructure.zip
+  skip_cleanup: true
   on:
+    tags: true
     repo: Josh-Willhite/pong
 
 notifications:
