@@ -5,12 +5,9 @@ python:
 install:
   - "pip install boto"
 
-script:
-  - echo 'TESTING!!'
-
 before_deploy:
-  - cd ../"$TRAVIS_BUILD_DIR"
-  - zip -r infrastructure.zip "$TRAVIS_BUILD_DIR"
+  - cd "$TRAVIS_BUILD_DIR"
+  - zip -r infrastructure.zip *.py
 
 deploy:
   provider: releases
