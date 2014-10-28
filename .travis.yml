@@ -1,0 +1,22 @@
+language: python
+python:
+  - '2.7'
+
+before_deploy:
+  - cd ../"$TRAVIS_BUILD_DIR"
+  - zip -r infrastructure.zip "$TRAVIS_BUILD_DIR"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: YZlScQfFoM9y+9xkS2XIv8cyxU26TyVoC7XVNn91jDqEKIX6zodq7g/S+zjUtm151OSuHXbk05AInW9jFw8/4OCr7uoZopn9yvaavvbTUvsaPL2r9Tr7eNOuOQXkglxxZi3m6arXkQ0D0VAecNfatCPXg/aR6+DusUIKTbTVDUo=
+  file: infrastructure.zip
+  on:
+    repo: Josh-Willhite/pong
+
+notifications:
+  email:
+    recipients:
+      - joshua@janrain.com
+    on_success: always
+    on_failure: always
