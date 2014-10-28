@@ -1,3 +1,3 @@
 #!/bin/bash
 set -ev
-echo 'fake script....'
+echo 'this is a fake script....'
