@@ -5,7 +5,8 @@ python:
 install:
   - "pip install boto"
 
-script: nosetests
+script:
+  - echo 'TESTING!!'
 
 before_deploy:
   - cd ../"$TRAVIS_BUILD_DIR"
