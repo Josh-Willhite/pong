@@ -18,8 +18,9 @@ deploy:
   file: infrastructure.zip
   skip_cleanup: true
   on:
-    tags: true
     repo: Josh-Willhite/pong
+    tags: true
+    all_branches: true
 
 notifications:
   email:
