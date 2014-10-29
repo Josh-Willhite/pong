@@ -19,7 +19,6 @@ deploy:
   skip_cleanup: true
   on:
     repo: Josh-Willhite/pong
-    tags: true
     all_branches: true
 
 notifications:
